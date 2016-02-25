@@ -93,14 +93,14 @@ end
               for j=1:numDataSets
                   keepInd=cell2mat(data(j))>=tmin & cell2mat(data(j))<=tmax;
                     tempdata=cell2mat(data(j));
-                    data(j)={tempdata(keepInd)};  
+                    data(j)={tempdata(keepInd)'};  
               end 
         else 
             for j=1:numDataVar:numDataSets*numDataVar
                 keepInd=cell2mat(data(j))>=tmin & cell2mat(data(j))<=tmax;
                   for i=0:numDataVar-1 %remove events from each column based on values in  first column of each set
                     tempdata=cell2mat(data(j+i));
-                    data(j+i)={tempdata(keepInd)}; 
+                    data(j+i)={tempdata(keepInd)'}; 
                   end    
             end
         end
@@ -635,7 +635,9 @@ if ~isnan(tmin)|| ~isnan(tmin)
    if isnan(tmax);
        tmax=Inf;
    end
+   
 data=removeMinMax(data,handles,tmin,tmax,xCol);
+
 end
 
 %handle global fit 
