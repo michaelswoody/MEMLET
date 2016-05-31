@@ -5,9 +5,9 @@ function [ fitted fVal exitflag output ] = mleAnneal(PDF,data,annealTemp,lb,ub,g
 
 %sets all the options for the fitting, starting with the final
 %patternsearch options which occurs after the annealing
-hybridopts = psoptimset('TolFun',1e-8,'TolX',1e-8,'display','none','MaxIter',15000,'MaxFunEvals',15000,'TimeLimit',100);
+hybridopts = psoptimset('TolFun',1e-10,'TolX',1e-7,'TolMesh',1e-7,'display','none','MaxIter',50000,'MaxFunEvals',60000,'TimeLimit',120);
 %set the annealing options 
-options = saoptimset('TolFun',1e-6,'TimeLimit',100,'display','none','InitialTemperature',annealTemp,'MaxIter',100000); 
+options = saoptimset('TolFun',1e-6,'TimeLimit',60,'display','none','InitialTemperature',annealTemp,'MaxIter',100000); 
 options = saoptimset(options,'HybridFcn',{@patternsearch,hybridopts}); 
 
  if iscell(PDF) %for global fits , assembles all the PDFs together after taking the negative of the log of the likelihood

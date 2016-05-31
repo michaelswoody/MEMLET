@@ -1,0 +1,14 @@
+function metaData=Simple_Custom_PDF_Example(x)
+
+% The metaData variable contains all the information about the PDF
+  metaData=struct('name','Simple Example',...   %give the PDF a name to appear in the drop down list 
+           'PDF',   'k1*exp(-k1*t)',...         % specify the functional form of the PDF as a string,
+                     'dataVar','x',...          % give a comma seperated string of all the data Variables          
+                   'fitVar', 'k1',...           % give a comma seperated string of all the  fitting Variables
+            'ub',   '100',...                   % give a comma seperated string of the default upper bounds in the same order as fitVar above
+            'lb',   '0' ,...                      % give a comma seperated string of the default upper bounds in the same order as fitVar above
+            'guess','1');     
+    
+      
+
+  

@@ -22,7 +22,7 @@ function varargout = MEMLET(varargin)
 
 % Edit the above text to modify the response to help MEMLET
 
-% Last Modified by GUIDE v2.5 23-Feb-2016 10:26:23
+% Last Modified by GUIDE v2.5 17-May-2016 15:36:25
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -554,6 +554,7 @@ set(handles.fitOutBox,'String',userOut);
 fitPDFtypeInd=get(handles.PDFselect,'Value');
 setappdata(handles.fitOutBox,['LL' num2str(fitPDFtypeInd)],logLikli);
 setappdata(handles.fitOutBox,['fit' num2str(fitPDFtypeInd)],fittedVals);
+setappdata(handles.fitOutBox,['TextOut' num2str(fitPDFtypeInd)],userOut);
 plotFit(handles); %plots the fitted values 
 
 %function that is called whenever some data needs to be fit, could be
@@ -802,6 +803,15 @@ function PDF_Callback(hObject, eventdata, handles)
 %        str2double(get(hObject,'String')) returns contents of PDF as a double
 setappdata(handles.PDF,'data',get(hObject,'String'));
 
+function PDF_KeyPressFcn(hObject, eventdata, handles)
+% hObject    handle to PDF (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of PDF as text
+%        str2double(get(hObject,'String')) returns contents of PDF as a double
+setappdata(handles.PDF,'data',get(hObject,'String'));
+
 % --- Executes during object creation, after setting all properties.
 function PDF_CreateFcn(hObject, eventdata, handles)
 % hObject    handle to PDF (see GCBO)
@@ -821,9 +831,17 @@ function selDatFilBtn_Callback(hObject, eventdata, handles)
 % hObject    handle to selDatFilBtn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
-
 try
+prePath=getappdata(hObject,'FilePath');
+if isempty(prePath) 
 [fileName,PathName,FilterIndex]=uigetfile({'*.txt';'*.csv'},'Select Data File'); 
+else
+   [fileName,PathName,FilterIndex]=uigetfile({'*.txt';'*.csv'},'Select Data File',[prePath '\Data file']); 
+end
+
+setappdata(hObject,'FilePath',PathName);
+
+% [fileName,PathName,FilterIndex]=uigetfile({'*.txt';'*.csv'},'Select Data File'); 
 setappdata(handles.selDatFilBtn,'data',[PathName fileName]); % save filename as selected 
 data=dlmread([PathName fileName]);% read data from file 
 
@@ -883,6 +901,7 @@ function dataVarName_Callback(hObject, eventdata, handles)
 % Hints: get(hObject,'String') returns contents of dataVarName as text
 %        str2double(get(hObject,'String')) returns contents of dataVarName as a double
 loadDataBtn_Callback(handles.dataVarName, eventdata, handles) 
+setappdata(handles.selDatFilBtn,'data','') %clear file name 
 
 % --- Executes during object creation, after setting all properties.
 function dataVarName_CreateFcn(hObject, eventdata, handles)
@@ -938,7 +957,8 @@ app=getappdata(handles.fitOutBox); %clear all previous Fits
       appdatas = fieldnames(bsAD);
        for kA = 1:length(appdatas) 
           rmappdata(handles.bootBox,appdatas{kA});
-        end
+       end
+       clearTextOut(handles)
 
 % --- Executes during object creation, after setting all properties.
 function deadTime_CreateFcn(hObject, eventdata, handles)
@@ -1287,12 +1307,22 @@ else % a custom PDF
           userPDF=getappdata(handles.PDF,'data');% get the custom PDF
         if ~isnan(tmin) %if there is a deadtime 
              %replace anything that says tdead with the deadtime specified 
-            userPDF=regexprep(userPDF, 'tdead',num2str(tdead));
+             try
+            userPDF=regexprep(userPDF, 'tmin',num2str(tmin));
             set(handles.PDF,'String',userPDF)
+             catch
+                 msgbox('no tmin found in equation')
+                 set(handles.PDF,'String',userPDF)
+             end
         end
         if ~isnan(tmax) %if there is a deadtime 
+              try
             userPDF=regexprep(userPDF, 'tmax',num2str(tmax));
              set(handles.PDF,'String',userPDF)
+              catch
+                   msgbox('no tmax found in equation')
+                   set(handles.PDF,'String',userPDF)
+             end
         end
 % retrieve the previously typed custom PDF 
         set(handles.userDataVar,'String',getappdata(handles.userDataVar,'data'))
@@ -1506,6 +1536,7 @@ for k=1:size(out_bs,2)
     bootOut=[bootOut sprintf('%s %u%% conf: %f - %f\n',char(userFitVar{k}),confInt*100,lowerConf(k),upperConf(k))];
 end
 set(handles.bootBox,'String',bootOut);
+setappdata(handles.bootBox,sprintf('bootOut%d',fitPDFtypeInd),bootOut);
 
 
 
@@ -1538,7 +1569,14 @@ try
 catch
     msgbox('Bootstrap Data not Availible');
 end
+prePath=getappdata(hObject,'FilePath');
+if isempty(prePath)
 [FileName,PathName] = uiputfile('BootStrap Output.csv','Please select a file to save the Bootstrap Output');
+else
+ [FileName,PathName] = uiputfile([prePath 'BootStrap Output.csv'],'Please select a file to save the Bootstrap Output');
+end
+
+setappdata(hObject,'FilePath',PathName);
 
 try
     T = array2table(out_bs,'VariableNames',userFitVar);
@@ -1648,16 +1686,7 @@ fitType=get(hObject,'Value');
 if ~isempty(getappdata(handles.fitOutBox,['fit' num2str(fitType)]));
     set(handles.plotFitBtn,'Enable','on')
     set(handles.plotFitBtn,'Enable','on')
-    userOut='';
-    fittedVals=getappdata(handles.fitOutBox,['fit' num2str(fitType)]);  
-    userFitVar= textscan(get(handles.userFitVar,'String'),'%s','delimiter',',');
-    userFitVar=userFitVar{1};
-    %generate the text output for the GUI
-    for i=1:length(userFitVar)
-        userOut=[userOut sprintf('%s=%f,\n',char(userFitVar{i}),fittedVals(i))];
-    end
-    logLikli=getappdata(handles.fitOutBox,['LL' num2str(fitType)]);
-    userOut=[userOut sprintf('Log-likelihood= %f',logLikli)];
+    userOut=getappdata(handles.fitOutBox,['TextOut' num2str(fitType)]);
     set(handles.fitOutBox,'String',userOut);
 try % see if you can also update the bootstrap bounds (only will work if BS was already done)
     confInt_Callback(handles.confInt, [], handles)
@@ -1673,9 +1702,9 @@ function clearTextOut(handles)
     set(handles.fitOutBox,'String','');
     set(handles.bootBox,'String','');
     set(handles.pval,'String','');
-     set(handles.pval,'String','');
-      set(handles.altLLH,'String','');
-      set(handles.AltFitBox,'String','');
+    set(handles.pval,'String','');
+    set(handles.altLLH,'String','');
+    set(handles.AltFitBox,'String','');
      
      
     
@@ -1894,3 +1923,93 @@ function tmax_CreateFcn(hObject, eventdata, handles)
 if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
     set(hObject,'BackgroundColor','white');
 end
+
+% --- Executes on button press in saveFitValBtn.
+function saveFitValBtn_Callback(hObject, eventdata, handles)
+% hObject    handle to saveFitValBtn (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+allPDFS=get(handles.PDFselect,'String');
+numPDFs=size(allPDFS,1);
+%get data name 
+dataName=getappdata(handles.selDatFilBtn,'data');
+dataName=strrep(dataName,'\','/');
+if strcmp(dataName,'')
+    try
+        dataName=get(handles.dataVarName,'String');
+    catch
+        msgbox('No data loaded')
+        return
+    end
+end
+textOut=['Data' sprintf('\t') dataName sprintf('\n')];
+
+%get tmin and tmax
+tminVal=get(handles.deadTime,'String');
+if ~isempty(tminVal)
+    textOut=[textOut 'tmin' sprintf('\t') tminVal sprintf('\n')];
+end
+tmaxVal=get(handles.tmax,'String');
+if ~isempty(tmaxVal)
+    textOut=[textOut 'tmax' sprintf('\t') tmaxVal sprintf('\n')];
+end
+
+for j=1:numPDFs %cycle through all PDFs
+   if ~isempty(getappdata(handles.fitOutBox,['fit' num2str(j)]));
+        fitName=allPDFS{j};  
+        %get name of PDF which has been fit
+        textOut=[textOut sprintf('\n%s\n',fitName)];
+        fittedVals=getappdata(handles.fitOutBox,['fit' num2str(j)]);  
+        userFitVar= PDFList(fitName,'fitVar');
+          userFitVar= textscan(userFitVar,'%s','delimiter',',');
+            userFitVar=userFitVar{1};
+        %if a non-global fit, export values tab delimited
+        if length(fittedVals)==length(userFitVar) 
+            logLikli=getappdata(handles.fitOutBox,['LL' num2str(j)]);
+            %generate the text output for the GUI
+            for i=1:length(userFitVar)
+                textOut=[textOut sprintf('%s \t %f\n',char(userFitVar{i}),fittedVals(i))];
+            end
+            textOut=[textOut sprintf('Log-likelihood \t %f \n',logLikli)];
+        else %if global fit, output text directly from fitted val box
+           fitOut=getappdata(handles.fitOutBox,['TextOut' num2str(j)]);
+           textOut=[textOut fitOut sprintf('\n')];
+        end   
+         %get bootstrapping data if present 
+        BootText=getappdata(handles.bootBox,sprintf('bootOut%d',j));
+        if ~isempty(BootText)
+            BootText=strrep(BootText,'%','%%');
+            textOut=[textOut 'Confidence Intervals' sprintf('\n') BootText sprintf('\n')];
+        end
+    end 
+end
+textOut=[textOut sprintf('\n \n')]; %add two lines after each data set
+if ~exist('fitName')
+    msgbox('No fits performed yet on this data')
+    return
+end
+
+prePath=getappdata(hObject,'FilePath');
+if isempty(prePath)
+[FileName,PathName] = uiputfile('Fit Output.txt','Please select a file to save the Fitted Values');
+else
+    [FileName,PathName] = uiputfile([ prePath 'Fit Output.txt'],'Please select a file to save the Fitted Values');
+end
+%give option to append to existing text file or to overwrite
+if exist([PathName FileName], 'file') == 2
+    append = questdlg('File Exists. Append Output or Overwrite?','Append or Overwrite?','Append','Overwrite','Append');
+    if strcmp(append,'Append')
+    fid=fopen([PathName FileName],'a');
+    else
+    fid=fopen([PathName FileName],'w');
+    end
+else 
+     fid=fopen([PathName FileName],'w');
+end
+%write output, and remember file path chosen 
+setappdata(hObject,'FilePath',PathName);
+fprintf(fid, textOut);
+fclose(fid);
+
+

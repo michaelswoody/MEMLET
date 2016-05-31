@@ -5,43 +5,17 @@ function [output varargout]=PDFList(PDFname,varargin)
 %varagin{2} is the deadtime combination type (0-no limits, 1-tmin only, 2- tmax only, 3 tmin and tmax) 
 
 if nargin==1
- 
+    limtype=0;
     type='all';
 elseif nargin==2;
- 
+    limtype=0;
     type=varargin{1};
 else
     type=varargin{1};
     limtype=varargin{2};
   
 end
-%custom PDFs
-%start with index 1, follow the format below filling in where there is ***
-% be sure to increment the index for each new PDF you add 
 
-% custNames{1}='';
-
-               
-%    customPDF(1)=struct('PDF',   '  ',...
-%                      'dataVar','   ',...                    
-%                     'fitVar', '    ',...
-%                       'ub',   '    ',...
-%                     'lb',   '    ',...
-%                     'guess','    ');
-%                 
-%                  
-    switch limtype % allows different PDFS to be specified for various cases
-        case 0 % case when no tmin or tmax
-        case 1 % case with tmin only 
-        customPDF(1).PDF='   ';
-        case 2 % case with tmax only
-        customPDF(1).PDF='   '; 
-        case 3 % case with both tmin and tmax
-        customPDF(1).PDF='    '; 
-    end  
-                
-     
-                
         
 %built in PDFs
 names{1}='Single Exp';
@@ -78,25 +52,10 @@ names{2}='Double Exp';
         builtInPDF(2).PDF='(A*k1*exp(-k1*t)+(1-A)*k2*exp(-k2*t))/(A*exp(-k1*tmin)-A*exp(-k1*tmax)+(1-A)*exp(-k2*tmin)-(1-A)*exp(-k2*tmax))';
     end
     
-names{3}='Triple Exp';
-    builtInPDF(3)=struct('PDF',  'tripExpPDF(t,A,B,k1,k2,k3)',...
-            'dataVar','t',...
-            'fitVar', 'A,B,k1,k2,k3',...
-            'ub',   '1,1,10000,10000,10000',...
-            'lb',   '0,0,0,0,0',...
-            'guess','0.2,0.4,10,100,1000');
-    switch limtype
-        case 0
-        case 1
-        builtInPDF(3).PDF='tripExpPDF(t,A,B,k1,k2,k3,tmin)';
-        case 2
-        builtInPDF(3).PDF='tripExpPDF(t,A,B,k1,k2,k3,0,tmax)';
-         case 3
-        builtInPDF(3).PDF='tripExpPDF(t,A,B,k1,k2,k3,tmin,tmax)';
-    end
+
  
-names{4}='Gaussian';
-    builtInPDF(4)=struct('PDF',  'GaussianPDF(x,mu,sig)',...
+names{3}='Gaussian';
+    builtInPDF(3)=struct('PDF',  'GaussianPDF(x,mu,sig)',...
             'dataVar','x',...
             'fitVar', 'mu,sig',...
             'ub',   '100,100',...
@@ -105,16 +64,16 @@ names{4}='Gaussian';
      switch limtype
         case 0
         case 1
-        builtInPDF(4).PDF='GaussianPDF(x,mu,sig,tmin)';
+        builtInPDF(3).PDF='GaussianPDF(x,mu,sig,tmin)';
         case 2
-        builtInPDF(4).PDF='GaussianPDF(x,mu,sig,-Inf,tmax)';
+        builtInPDF(3).PDF='GaussianPDF(x,mu,sig,-Inf,tmax)';
          case 3
-        builtInPDF(4).PDF='GaussianPDF(x,mu,sig,tmin,tmax)';
+        builtInPDF(3).PDF='GaussianPDF(x,mu,sig,tmin,tmax)';
     end
  
        
-names{5}='Double Gaussian';
-    builtInPDF(5)=struct('PDF',  'GaussianTwoPDF(x,A,mu,sig,mu2,sig2)',...
+names{4}='Double Gaussian';
+    builtInPDF(4)=struct('PDF',  'GaussianTwoPDF(x,A,mu,sig,mu2,sig2)',...
             'dataVar','x',...
             'fitVar', 'A,mu,sig,mu2,sig2',...
             'ub',   '1,100,100,100,100',...
@@ -123,54 +82,32 @@ names{5}='Double Gaussian';
          switch limtype
         case 0
         case 1
-        builtInPDF(5).PDF='GaussianTwoPDF(x,A,mu,sig,mu2,sig2,tmin)';
+        builtInPDF(4).PDF='GaussianTwoPDF(x,A,mu,sig,mu2,sig2,tmin)';
         case 2
-        builtInPDF(5).PDF='GaussianTwoPDF(x,A,mu,sig,mu2,sig2,-Inf,tmax)';
+        builtInPDF(4).PDF='GaussianTwoPDF(x,A,mu,sig,mu2,sig2,-Inf,tmax)';
          case 3
-        builtInPDF(5).PDF='GaussianTwoPDF(x,A,mu,sig,mu2,sig2,tmin,tmax)';
+        builtInPDF(4).PDF='GaussianTwoPDF(x,A,mu,sig,mu2,sig2,tmin,tmax)';
     end
-    
-names{6}='Bell''s Equation';
-    builtInPDF(6)=struct('PDF',  '(k1*exp(-(F*d)/4.1))*exp(-(k1*exp(-(F*d)/4.1))*t)',...
-            'dataVar','t,F',...
-            'fitVar', 'k1,d',...
-            'ub',   '10000,100',...
-            'lb',   '0,-100',...
-            'guess','10,0');
-   switch limtype
-        case 0
-        case 1
-        builtInPDF(6).PDF= '((k1*exp(-(F*d)/4.1))*exp(-(k1*exp(-(F*d)/4.1))*t))/(exp(-(k1*exp(-(F*d)/4.1))*tmin))';
-    end    
-    
-      names{7}='Gamma';
-   builtInPDF(7)=struct('PDF',   '(k^alpha/gamma(alpha))*t^(alpha-1)*exp(-k*t)',...
-                     'dataVar','t',...                    
-                    'fitVar', 'k,alpha',...
-                      'ub',   '1000,1000',...
-                    'lb',   '0,0',...
-                    'guess','50,2');
- names{8}='Chisquared';
-   builtInPDF(8)=struct('PDF',   '(1/(2^(k/2)*gamma(k/2))*(x^(k/2-1)*exp(-x/2))',...
-                     'dataVar','x',...                    
-                   'fitVar', 'k',...
-            'ub',   '100,',...
-            'lb',   '0' ,...
-            'guess','1');
-        
-        names{9}='Beta';
-   builtInPDF(9)=struct('PDF',   '(x^(a-1)*(1-x)^(b-1))/beta(a,b)',...
-                     'dataVar','x',...                    
-                   'fitVar', 'a,b',...
-            'ub',   '100,100',...
-            'lb',   '0,0' ,...
-            'guess','1,2');     
-        
-        
-if exist('custNames')
-    builtInPDF=[builtInPDF customPDF];
-    names=[names custNames];
+
+%scan folder for PDF files 
+ProgDir=which('PDFList.m');
+ProgDir=ProgDir(1:end-9);
+PDFDir=[ProgDir 'PDFs\'];
+ fildPDFs=[]; filenames=[];
+if isdir(PDFDir)
+    listing =  dir(PDFDir);
+    listing=listing(cellfun(@(x) x==0, {listing.isdir}));
+    addpath(PDFDir);
+     for i=1:size(listing,1) %skips . and ..
+        filePDFs(i)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
+        fileNames{i}=filePDFs(i).name; 
+        filePDFs(i)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
+     end   
+    filePDFs = rmfield(filePDFs,'name');
+    builtInPDF=[builtInPDF  filePDFs];
+    names=[names  fileNames];
 end
+
  %read things 
 if strcmp(PDFname,'all') %returns all the names of the PDFs 
     output=names;
