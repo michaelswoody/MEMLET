@@ -1,5 +1,5 @@
 function [ linearPDF userFitVar ] = strLinPDF( userPDF, userFitVar,userDataVar,varargin )
-%str2LinPDF takes a string and creates a usable PDF function and makes it
+%str2LinPDF (v1.0) takes a string and creates a usable PDF function and makes it
 %global if enough arguments are supplied 
 % Varargin{1} should be a cell array of strings of the global variables that
 % are unique for each data set

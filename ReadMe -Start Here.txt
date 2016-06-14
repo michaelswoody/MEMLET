@@ -18,7 +18,7 @@ Documentation/MEMLET User Guide- Comprehensive help file describing the user of 
 
 MATLAB Code- Contains MEMLET folder with all Matlab scripts and GUI file to be used when Matlab is installed on the user computer
 
-Stand-alone Installer/Install MEMLET.exe- Installation executable for users who do not have Matlab Installed or a Matlab License
+Stand-alone Installer/Install MEMLET 1.0.exe- Installation executable for users who do not have Matlab Installed or a Matlab License
 
 ReadMe - Start Here.txt - This file 
 

@@ -1,26 +1,12 @@
 function varargout = MEMLET(varargin)
 % MEMLET MATLAB code for MEMLET.fig
-%      MEMLET, by itself, creates a new MEMLET or raises the existing
-%      singleton*.
+%   MLE Fitting Program with Graphic User Interface. 
+%   Current Version 1.0, released June 2016
+%   Written by Michael S Woody. memletinfo@gmail.com
+%   For more information, see the user's guide supplied at http://michaelswoody.github.io/MEMLET/
+%   To user the program with the command line, use the MEMELTCL.m file
+%      
 %
-%      H = MEMLET returns the handle to a new MEMLET or the handle to
-%      the existing singleton*.
-%
-%      MEMLET('CALLBACK',hObject,eventData,handles,...) calls the local
-%      function named CALLBACK in MEMLET.M with the given input arguments.
-%
-%      MEMLET('Property','Value',...) creates a new MEMLET or raises the
-%      existing singleton*.  Starting from the left, property value pairs are
-%      applied to the GUI before MEMLET_OpeningFcn gets called.  An
-%      unrecognized property name or invalid value makes property application
-%      stop.  All inputs are passed to MEMLET_OpeningFcn via varargin.
-%
-%      *See GUI Options on GUIDE's Tools menu.  Choose "GUI allows only one
-%      instance to run (singleton)".
-%
-% See also: GUIDE, GUIDATA, GUIHANDLES
-
-% Edit the above text to modify the response to help MEMLET
 
 % Last Modified by GUIDE v2.5 17-May-2016 15:36:25
 

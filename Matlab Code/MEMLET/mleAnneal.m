@@ -1,5 +1,5 @@
 function [ fitted fVal exitflag output ] = mleAnneal(PDF,data,annealTemp,lb,ub,guess)
-%MLEANNEAL this function fits a pdf with inputs guess to the data, data
+%MLEANNEAL(v1.0) this function fits a pdf with inputs guess to the data, data
 %   It uses simulated annealing hybrid function to find the best fit to the
 %   data. 
 

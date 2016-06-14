@@ -1,5 +1,5 @@
 function [ fitted fVal exitflag output ] = mleAnneal(PDF,data,lb,ub,vargin)
-%MLEANNEAL this function fits a pdf with inputs vargin to the data, data
+%MLEANNEAL (v1.0) this function fits a pdf with inputs vargin to the data, data
 %   It uses simulated annealing hybrid function to find the best fit to the
 %   data. 
 global tdead

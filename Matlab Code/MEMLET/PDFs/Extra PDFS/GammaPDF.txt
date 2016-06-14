@@ -1,0 +1,7 @@
+Gamma Distribution
+(k^alpha/gamma(alpha))*t^(alpha-1)*exp(-k*t)
+t          
+k,alpha
+1000,1000
+0,0
+50,2

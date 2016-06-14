@@ -1,5 +1,5 @@
 function [fittedVals, logLikli] =  MEMLETCL(data, userPDF, dataVar, fitVar, lb,ub, guess,annealTemp, varargin)
-% function which performed the MLE fit just as in the MLEFT GUI program.
+% (v1.0) function which performed the MLE fit just as in the MEMLET GUI program.
 % bootstrapping can be performed via parallel computation by inputting the
 % number of rounds of bootstrapping required. For more information, see the
 % accompaning documentation. 

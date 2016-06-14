@@ -1,5 +1,6 @@
 function [output varargout]=PDFList(PDFname,varargin)
-%return values for a given selected PDF
+%(v1.0) return values for a given PDF, will scan the subfolder "PDFs" to
+%look for additional PDFS. See User's Guide for more details
 %asking for 'all' gives the names only of every PDF in the database
 %varargin{1} is type of data requested
 %varagin{2} is the deadtime combination type (0-no limits, 1-tmin only, 2- tmax only, 3 tmin and tmax) 
@@ -13,7 +14,6 @@ elseif nargin==2;
 else
     type=varargin{1};
     limtype=varargin{2};
-  
 end
 
         
@@ -90,22 +90,55 @@ names{4}='Double Gaussian';
     end
 
 %scan folder for PDF files 
-ProgDir=which('PDFList.m');
-ProgDir=ProgDir(1:end-9);
-PDFDir=[ProgDir 'PDFs\'];
- fildPDFs=[]; filenames=[];
-if isdir(PDFDir)
-    listing =  dir(PDFDir);
-    listing=listing(cellfun(@(x) x==0, {listing.isdir}));
+if isdeployed % Stand-alone mode.
+    [status, result] = system('path');
+    ProgDir = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
+    PDFDir =[ProgDir '\PDFs\'];
+else
+    ProgDir=which('PDFList.m');
+    ProgDir=ProgDir(1:end-9);
+    PDFDir=[ProgDir 'PDFs\'];
     addpath(PDFDir);
-     for i=1:size(listing,1) %skips . and ..
-        filePDFs(i)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
-        fileNames{i}=filePDFs(i).name; 
-        filePDFs(i)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
-     end   
+end
+  fildPDFs=[]; filenames=[];
+if isdir(PDFDir)
+    try
+    listing =  dir(PDFDir);
+    listing=listing(cellfun(@(x) x==0, {listing.isdir})); %skips . and ..
+       for i=1:size(listing,1) 
+         % add any new PDF's to the working root directory 
+           if strcmp(listing(i).name(end-3:end),'.txt') %read basic PDF from txt files 
+               try
+                fileID=fopen([PDFDir listing(i).name],'r');
+                name=  strtrim(fgetl(fileID)); %read name first 
+                filePDFs(i).name = name; %for consistency
+                fileNames{i}=filePDFs(i).name;
+                filePDFs(i).PDF = strtrim(fgetl(fileID)); %read PDF 
+                filePDFs(i).dataVar = strtrim(fgetl(fileID)); %read datavars
+                filePDFs(i).fitVar = strtrim(fgetl(fileID)); %read fit vars  
+                filePDFs(i).ub = strtrim(fgetl(fileID)); %read upper bounds
+                filePDFs(i).lb = strtrim(fgetl(fileID)); %read name first 
+                filePDFs(i).guess = strtrim(fgetl(fileID)); %read name first
+                fclose(fileID);
+               catch
+                 msgbox([listing(i).name(end-3:end) 'is not properly formatted'])
+               end
+           else  %read other PDFs if they aren't more complicated 
+               try %try to use .m file PDFS, but won't work with standalone if they haven't been compiled. 
+            filePDFs(i)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
+            fileNames{i}=filePDFs(i).name; 
+            filePDFs(i)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
+               catch
+                   msgbox(sprintf('Unable to process %s, because it has not been precompiled',listing(i).name));
+               end  
+        end  
+       end
     filePDFs = rmfield(filePDFs,'name');
     builtInPDF=[builtInPDF  filePDFs];
     names=[names  fileNames];
+    catch ME
+        msgbox(ME.message)
+    end
 end
 
  %read things 
