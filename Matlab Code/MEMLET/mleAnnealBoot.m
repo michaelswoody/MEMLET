@@ -3,7 +3,11 @@ function [ fitted fVal exitflag output ] = mleAnneal(PDF,data,lb,ub,vargin)
 %   It uses simulated annealing hybrid function to find the best fit to the
 %   data. 
 global tdead
-hybridopts = psoptimset('TolFun',1e-8,'TolX',1e-8,'display','none','MaxIter',500000,'MaxFunEvals',20000);
+try
+    hybridopts = psoptimset('TolFun',1e-8,'TolX',1e-8,'display','none','MaxIter',500000,'MaxFunEvals',20000);
+catch
+    msgbox('Error: Global Optimization Toolbox required. Either Install Global Optimization Toolbox from Mathworks, or use standalone version of MEMLET')
+end 
 options = saoptimset('TolFun',1e-8,'TimeLimit',10,'display','none','InitialTemperature',0.5,'MaxIter',20000);%,'HybridFcn',fminsearch); 
   options = saoptimset(options,'HybridFcn',{@patternsearch,hybridopts}); 
     if iscell(PDF) %for global fits 

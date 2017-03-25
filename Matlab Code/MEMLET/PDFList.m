@@ -8,15 +8,30 @@ function [output varargout]=PDFList(PDFname,varargin)
 if nargin==1
     limtype=0;
     type='all';
+    switch 1
+        case strcmp(PDFname,'all')
+            search=[1];
+        case strcmp(PDFname,'Cam')
+            search=[1 3];
+        case strcmp(PDFname,'Oth')
+            search=[1 2];
+        case strcmp(PDFname,'CamOth')
+            search=[1 2 3];     
+    end
+    PDFname='all';
 elseif nargin==2;
     limtype=0;
     type=varargin{1};
+    search=[1 2 3];  
 else
     type=varargin{1};
     limtype=varargin{2};
+    search=[1 2 3];  
 end
+searchDirs={'PDFs\','PDFs\Extra PDFs\','PDFs\Camera PDFs\'};
 
-        
+
+
 %built in PDFs
 names{1}='Single Exp';
     builtInPDF(1)=struct('PDF',   'k1*exp(-k1*t)',...
@@ -35,7 +50,7 @@ names{1}='Single Exp';
         builtInPDF(1).PDF='(k1*exp(-k1*t))/(exp(-k1*tmin)-exp(-k1*tmax))'; 
     end  
  
-names{2}='Double Exp';
+names{2}='Double Exp (Independent)';
     builtInPDF(2)=struct('PDF',  'A*k1*exp(-k1*t)+(1-A)*k2*exp(-k2*t)',...
                       'dataVar','t',...                    
                     'fitVar', 'A,k1,k2',...
@@ -90,57 +105,72 @@ names{4}='Double Gaussian';
     end
 
 %scan folder for PDF files 
-if isdeployed % Stand-alone mode.
-    [status, result] = system('path');
-    ProgDir = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
-    PDFDir =[ProgDir '\PDFs\'];
-else
-    ProgDir=which('PDFList.m');
-    ProgDir=ProgDir(1:end-9);
-    PDFDir=[ProgDir 'PDFs\'];
-    addpath(PDFDir);
-end
-  fildPDFs=[]; filenames=[];
+
+for j=search;
+      clear filePDFs  filenames
+     curSearch=searchDirs{j};
+    if isdeployed % Stand-alone mode.
+        [status, result] = system('path');
+        ProgDir = char(regexpi(result, 'Path=(.*?);', 'tokens', 'once'));
+        PDFDir =[ProgDir '\' curSearch];
+    else
+        ProgDir=which('PDFList.m');
+        ProgDir=ProgDir(1:end-9);
+        PDFDir=[ProgDir curSearch];
+        addpath(PDFDir);
+    end
+
 if isdir(PDFDir)
     try
     listing =  dir(PDFDir);
     listing=listing(cellfun(@(x) x==0, {listing.isdir})); %skips . and ..
+    k=1;
        for i=1:size(listing,1) 
          % add any new PDF's to the working root directory 
            if strcmp(listing(i).name(end-3:end),'.txt') %read basic PDF from txt files 
                try
                 fileID=fopen([PDFDir listing(i).name],'r');
                 name=  strtrim(fgetl(fileID)); %read name first 
-                filePDFs(i).name = name; %for consistency
-                fileNames{i}=filePDFs(i).name;
-                filePDFs(i).PDF = strtrim(fgetl(fileID)); %read PDF 
-                filePDFs(i).dataVar = strtrim(fgetl(fileID)); %read datavars
-                filePDFs(i).fitVar = strtrim(fgetl(fileID)); %read fit vars  
-                filePDFs(i).ub = strtrim(fgetl(fileID)); %read upper bounds
-                filePDFs(i).lb = strtrim(fgetl(fileID)); %read name first 
-                filePDFs(i).guess = strtrim(fgetl(fileID)); %read name first
+                if isempty(strfind(name,'template'))&&isempty(strfind(name,'Instructions'))
+                    filePDFs(k).name = name; %for consistency
+                    fileNames{k}=filePDFs(k).name;
+                    filePDFs(k).PDF = strtrim(fgetl(fileID)); %read PDF 
+                    filePDFs(k).dataVar = strtrim(fgetl(fileID)); %read datavars
+                    filePDFs(k).fitVar = strtrim(fgetl(fileID)); %read fit vars  
+                    filePDFs(k).ub = strtrim(fgetl(fileID)); %read upper bounds
+                    filePDFs(k).lb = strtrim(fgetl(fileID)); %read name first 
+                    filePDFs(k).guess = strtrim(fgetl(fileID)); %read name first
+                     k=k+1;
+                else
+                end
                 fclose(fileID);
+                
                catch
                  msgbox([listing(i).name(end-3:end) 'is not properly formatted'])
                end
            else  %read other PDFs if they aren't more complicated 
                try %try to use .m file PDFS, but won't work with standalone if they haven't been compiled. 
-            filePDFs(i)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
-            fileNames{i}=filePDFs(i).name; 
-            filePDFs(i)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
+                    if isempty(strfind(listing(i).name(1:end-2),'Template'))
+                        filePDFs(k)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
+                        fileNames{k}=filePDFs(k).name; 
+                        filePDFs(k)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
+                        k=k+1;
+                    else
+                    end
                catch
                    msgbox(sprintf('Unable to process %s, because it has not been precompiled',listing(i).name));
                end  
         end  
-       end
+      end
     filePDFs = rmfield(filePDFs,'name');
     builtInPDF=[builtInPDF  filePDFs];
     names=[names  fileNames];
+    clear filePDFs fileNames
     catch ME
         msgbox(ME.message)
     end
 end
-
+end
  %read things 
 if strcmp(PDFname,'all') %returns all the names of the PDFs 
     output=names;
@@ -157,4 +187,8 @@ else
        output=eval(sprintf('builtInPDF(%d).%s',Index,type));
    end
 end 
+% Please Ignore: hack to include Beta Functoin in Distribution 
+  if i==1e23 ;
+      x=beta(random('uniform',0,1,2));
+  end
 end

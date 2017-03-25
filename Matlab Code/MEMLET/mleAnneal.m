@@ -5,7 +5,11 @@ function [ fitted fVal exitflag output ] = mleAnneal(PDF,data,annealTemp,lb,ub,g
 
 %sets all the options for the fitting, starting with the final
 %patternsearch options which occurs after the annealing
+try
 hybridopts = psoptimset('TolFun',1e-10,'TolX',1e-7,'TolMesh',1e-7,'display','none','MaxIter',50000,'MaxFunEvals',60000,'TimeLimit',120);
+catch
+    msgbox('Error: Optimization Toolbox required. Either Install Optimization Toolbox, or use standalone version of MEMLET')
+end 
 %set the annealing options 
 options = saoptimset('TolFun',1e-6,'TimeLimit',60,'display','none','InitialTemperature',annealTemp,'MaxIter',100000); 
 options = saoptimset(options,'HybridFcn',{@patternsearch,hybridopts}); 

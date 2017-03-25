@@ -8,11 +8,13 @@ function varargout = MEMLET(varargin)
 %      
 %
 
-% Last Modified by GUIDE v2.5 17-May-2016 15:36:25
+% Last Modified by GUIDE v2.5 25-Mar-2017 12:38:46
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
-javax.swing.UIManager.setLookAndFeel('com.sun.java.swing.plaf.windows.WindowsLookAndFeel')
+if ispc  % update the look if using Windows 
+   javax.swing.UIManager.setLookAndFeel('com.sun.java.swing.plaf.windows.WindowsLookAndFeel')
+end 
 gui_State = struct('gui_Name',       mfilename, ...
     'gui_Singleton',  gui_Singleton, ...
     'gui_OpeningFcn', @MEMLET_OpeningFcn, ...
@@ -41,19 +43,33 @@ function MEMLET_OpeningFcn(hObject, eventdata, handles, varargin)
 % Choose default command line output for MEMLET
 handles.output = hObject;
 
-% Update handles structure
-guidata(hObject, handles);
+
 
 % This sets up the initial plot - only do when we are invisible
 % so window can get raised using MEMLET.
-if strcmp(get(hObject,'Visible'),'off')
+% if strcmp(get(hObject,'Visible'),'Checked')
     plot(.5,.5);
+    axes(handles.axes1);
     set(gca,'FontSize',10)
      set(gca,'FontUnits','normalized')
-end
+% end
 
+%allows latex for delta t
+handles.laxis = axes('parent',hObject,'units','normalized','position',[0 0 1 1],'visible','off');
+delete(handles.delTtext);
+
+handles.delTtext = text(0.1418,0.456,'$\Delta$t','interpreter','latex');
+set(handles.delTtext,'Visible','Off')
+
+handles.showCam.Checked='off';
+handles.ShowOther.Checked='off';
+axes(handles.axes1);
 % UIWAIT makes MEMLET wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
+
+% Update handles structure
+guidata(hObject, handles);
+
 
 % --- Outputs from this function are returned to the command line.
 function varargout = MEMLET_OutputFcn(hObject, eventdata, handles)
@@ -686,10 +702,11 @@ end
       
        
        try 
+           parpool
            poolobj = gcp; % determine number of workers in current pool
            loopsize=poolobj.NumWorkers*2; %use each worker twice by default
        catch
-           loopsize=10; %how many iterations to do before updatin
+           loopsize=10; %how many iterations to do before updating
        end
        numLoops=floor(numBoot/loopsize);
         warning off 
@@ -987,7 +1004,8 @@ function LoglikelihoodTestBtn_Callback(hObject, eventdata, handles)
 constInput=get(handles.constIn,'String');
 % get out a list of the constrained variables and their values from a comma
 % seperated list 
-varsAndVals=regexp(constInput,'[A-Za-z0-9_.]*(?=|,)','match'); 
+vars=regexp([',' constInput ],'(?<=[,\s]*)[A-Za-z0-9_.]*(?==)','match');
+Vals=regexp([constInput ','],'(?<==)([\w\W^]*?)(?=,)','match');
 userPDF= get(handles.PDF,'String');
 constPDF=userPDF;
 %get userFitVars and unwrap 
@@ -995,11 +1013,10 @@ userFitVar= textscan(get(handles.userFitVar,'String'),'%s','delimiter',',');
  userFitVar=userFitVar{1};
  ind=true;
  k=1; %index of "constant" varaibles 
-for i=1:2:length(varsAndVals);
-    conVars{k}=varsAndVals{i}; %make a list of the variable names 
-    conVals(k)=str2num(varsAndVals{i+1}); % list of values 
+for i=1:length(vars);
+    conVars{k}=vars{i}; conVals{k}=Vals{i};
     ind=ind&~strcmp(userFitVar,conVars{k}); % Make an index of values that never show up as a constant 
-    eval(sprintf('constPDF= regexprep(constPDF,''(?<![a-zA-Z_0-9])%s(?![a-zA-Z_0-9])'',num2str(conVals(k)));',conVars{k}));
+    eval(sprintf('constPDF= regexprep(constPDF,''(?<![a-zA-Z_0-9])%s(?![a-zA-Z_0-9])'',conVals(k));',conVars{k}));
     k=k+1;
 end
 delDF=length(conVars); % number of degrees of freedom between the two data set (equal to the number of variables constrained) 
@@ -1162,6 +1179,11 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 
 function checkMultColums(handles,data)
+%    Code which automatically populates tmin and tmax (NOT RECOMMENDED)
+%    set(handles.tmax,'String',num2str(max(data)));
+%    set(handles.deadTime,'String',num2str(min(data)));
+%    updatePDFandVars(handles) 
+
  set(handles.text32,'Visible','on');
   numCol=size(data,2);
    %populate the X and Y selector list 
@@ -1226,7 +1248,7 @@ try
 %             msgbox('Could not load data from given variable','Data Load Error')
         end
    checkMultColums(handles,data) %updates X and Y selectors based on number of colums
-   
+  
     setappdata(handles.axes1,'data',data); %store data in the graph 
     app=getappdata(handles.fitOutBox); %clear all previous Fits 
     appdatas = fieldnames(app); %c
@@ -1258,7 +1280,7 @@ end
 function updatePDFandVars(handles)
 tmin=str2double(get(handles.deadTime,'String')); %get deadtime 
 tmax=str2double(get(handles.tmax,'String')); %get maxtime
-
+delT=str2double(get(handles.delTbox,'String')); % 
 PDFlist=get(handles.PDFselect,'String'); %get all the current PDF's 
 fitType=PDFlist{get(handles.PDFselect,'Value')};
 if isnan(tmin)
@@ -1278,9 +1300,16 @@ end
 if ~strcmp(fitType,'Other') % if not a custom PDF 
     %load the PDF and bounds/guess from the PDFList function 
     [userPDF userDataVar userFitVar lb ub guess]=PDFList(fitType,'all',limtype);
+    
+    del_tPos = strfind(userPDF, 'del_t');
     %replace the tdead text with the actual deadtime 
-    userPDF=regexprep(userPDF, 'tmin',num2str(tmin));
-    userPDF=regexprep(userPDF, 'tmax',num2str(tmax));
+     if ~isnan(tmin)
+            userPDF=regexprep(userPDF, 'tmin',num2str(tmin));
+    end
+     userPDF=regexprep(userPDF, 'tmax',num2str(tmax));
+    if ~isnan(delT)
+           userPDF=regexprep(userPDF, 'del_t',num2str(delT));
+    end
     %store all the values 
     set(handles.PDF,'String',userPDF)
         set(handles.userDataVar,'String',userDataVar)
@@ -1291,6 +1320,7 @@ if ~strcmp(fitType,'Other') % if not a custom PDF
 else % a custom PDF 
     try
           userPDF=getappdata(handles.PDF,'data');% get the custom PDF
+          del_tPos = strfind(userPDF, 'del_t');
         if ~isnan(tmin) %if there is a deadtime 
              %replace anything that says tdead with the deadtime specified 
              try
@@ -1322,8 +1352,18 @@ else % a custom PDF
         msgbox('Error in PDF selection')
         rethrow ME
     end
+
 end
 
+if isempty(del_tPos)
+    set(handles.delTbox,'Visible','Off')
+    set(handles.delTtext,'Visible','Off')
+else
+    set(handles.delTbox,'Visible','On')
+     set(handles.delTtext,'Visible','On')
+end
+
+    
 function lbBox_Callback(hObject, eventdata, handles)
 % hObject    handle to lbBox (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
@@ -1651,8 +1691,8 @@ if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgr
 end
 %populates the list of PDF names when the GUI is started by asking the
 %PDFList function 
-PDFnames=PDFList('all','',0);
-PDFnames={PDFnames{:} 'Other'};
+PDFnames=PDFList('all');
+PDFnames={PDFnames{:} 'Other' 'Use Show PDFs menu for more...'};
 set(hObject,'String',PDFnames)
 
 
@@ -1999,3 +2039,103 @@ fprintf(fid, textOut);
 fclose(fid);
 
 
+
+
+
+function delTbox_Callback(hObject, eventdata, handles)
+% hObject    handle to delTbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of delTbox as text
+%        str2double(get(hObject,'String')) returns contents of delTbox as a double
+updatePDFandVars(handles); %update the PDF when the del_t changes 
+
+% --- Executes during object creation, after setting all properties.
+function delTbox_CreateFcn(hObject, eventdata, handles)
+% hObject    handle to delTbox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    empty - handles not created until after all CreateFcns called
+
+% Hint: edit controls usually have a white background on Windows.
+%       See ISPC and COMPUTER.
+if ispc && isequal(get(hObject,'BackgroundColor'), get(0,'defaultUicontrolBackgroundColor'))
+    set(hObject,'BackgroundColor','white');
+end
+
+
+
+function globalVarBox_Callback(hObject, eventdata, handles)
+% hObject    handle to globalVarBox (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+% Hints: get(hObject,'String') returns contents of globalVarBox as text
+%        str2double(get(hObject,'String')) returns contents of globalVarBox as a double
+
+
+% --------------------------------------------------------------------
+function Untitled_2_Callback(hObject, eventdata, handles)
+% hObject    handle to Untitled_2 (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+
+
+% --------------------------------------------------------------------
+function showCam_Callback(hObject, eventdata, handles)
+% hObject    handle to showCam (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if strcmp(hObject.Checked,'off')
+    hObject.Checked='on';
+    else
+    hObject.Checked ='off';
+end
+    %populates the list of PDF names when the GUI is started by asking the
+%PDFList function 
+RefreshPDFList(handles);
+
+% --------------------------------------------------------------------
+function ShowOther_Callback(hObject, eventdata, handles)
+% hObject    handle to ShowOther (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if strcmp(hObject.Checked,'off')
+    hObject.Checked='on';
+else
+    hObject.Checked ='off';
+end
+
+    RefreshPDFList(handles);
+
+function RefreshPDFList(handles) 
+search=[];
+if strcmp(handles.showCam.Checked,'on')
+    search=[search 'Cam'];
+end
+if strcmp(handles.ShowOther.Checked,'on')
+    search=[search 'Oth'];
+end
+if isempty(search)
+    search='all';
+end
+OldValue=handles.PDFselect.String(handles.PDFselect.Value);
+PDFnames=PDFList(search);
+PDFnames={PDFnames{:} 'Other'};
+if ~strcmp(search,'CamOth')
+   PDFnames={PDFnames{:} 'Use Show PDFs menu for more...'};
+end
+newInd=1; reset=1;
+for i=1:size(PDFnames,2)
+    if strcmp(PDFnames{i},OldValue)
+        newInd=i;
+         reset=reset-1;
+    else 
+    end
+end
+    
+set(handles.PDFselect,'String',PDFnames)
+handles.PDFselect.Value=newInd;
+if reset==1
+     updatePDFandVars(handles);
+end
