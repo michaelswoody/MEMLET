@@ -2139,3 +2139,6 @@ handles.PDFselect.Value=newInd;
 if reset==1
      updatePDFandVars(handles);
 end
+
+
+function constIn_Callback(hObject, eventdata, handles)
