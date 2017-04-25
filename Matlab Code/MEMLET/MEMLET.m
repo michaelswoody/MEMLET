@@ -1,14 +1,14 @@
 function varargout = MEMLET(varargin)
 % MEMLET MATLAB code for MEMLET.fig
 %   MLE Fitting Program with Graphic User Interface. 
-%   Current Version 1.0, released June 2016
+%   Current Version 1.1.2, released April 2017
 %   Written by Michael S Woody. memletinfo@gmail.com
 %   For more information, see the user's guide supplied at http://michaelswoody.github.io/MEMLET/
 %   To user the program with the command line, use the MEMELTCL.m file
 %      
 %
 
-% Last Modified by GUIDE v2.5 25-Mar-2017 12:38:46
+% Last Modified by GUIDE v2.5 25-Apr-2017 10:06:37
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
