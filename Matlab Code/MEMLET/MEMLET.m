@@ -718,7 +718,7 @@ end
                             fitData=cell(1,length(data));
                             for j=1:length(data)
                                 tempData=cell2mat(data(j));
-                                if mod(j,numDataVar)==0 %only make new indexes for each set of data (
+                                if mod(j,numDataVar)==1 %only make new indexes for each set of data (
                                 ind=ceil(length(tempData)*rand(1,length(tempData)));
                                 end
                                 fitData(j)={tempData(ind)};
@@ -734,13 +734,15 @@ end
                     fittedVals((k-1)*loopsize+1:(k)*loopsize,:)=tempfittedVals(:,:); %read out the fitted values from this loop iteration 
                     set(handles.curIt,'String',num2str((k)*loopsize)); 
                     drawnow; %update the count 
+                    remainder=mod(numBoot,loopsize);
                 end
              else %if in the strange case you request fewer rounds of bootstrapping than the loopsize 
                 k=0;
+                remainder=numBoot;
              end
             % perform the rest of the fits if doing a non-integer mutliple
             % of the loopsize 
-            remainder=mod(numBoot,loopsize);
+         
             if ~remainder==0
                 tempfittedVals=[];
                 parfor i=1:remainder
@@ -749,7 +751,7 @@ end
                             fitData=cell(1,length(data));
                            for j=1:length(data)
                                 tempData=cell2mat(data(j));
-                                if mod(j,numDataVar)==0 %only make new indexes for each set of data
+                                if mod(j,numDataVar)==1 %only make new indexes for each set of data
                                 ind2=ceil(length(tempData)*rand(1,length(tempData)));
                                 end
                                 fitData(j)={tempData(ind2)};
