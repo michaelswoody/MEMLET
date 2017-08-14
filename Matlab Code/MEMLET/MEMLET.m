@@ -390,8 +390,8 @@ try
           allVals(i,:)=PDF(plotVarx,out_bs(i,:)');  %evaluate PDF 
          end
          %find the upper and lower values at each x position 
-          uppers=prctile(allVals,confIt*100,1);
-          lowers=prctile(allVals,100*(1-confIt),1);
+          uppers=prctile(allVals,(1-(1-confIt)/2)*confIt*100,1);
+          lowers=prctile(allVals,100*(1-confIt)/2,1);
         plot(plotVarx,uppers,'k--');
         hold on 
         plot(plotVarx,lowers,'k--');
@@ -406,8 +406,8 @@ try
           fittedCDF(i,:)=cumtrapz(allVals(i,:)); 
           fittedCDF(i,:)=fittedCDF(i,:)/max(fittedCDF(i,:));
                  end
-              uppers=prctile(fittedCDF,confIt*100,1);
-              lowers=prctile(fittedCDF,100*(1-confIt),1);
+              uppers=prctile(fittedCDF,(1-(1-confIt)/2)*100,1);
+              lowers=prctile(fittedCDF,100*(1-confIt)/2,1);
             plot(plotVarx,uppers,'k--');
             hold on 
             plot(plotVarx,lowers,'k--');
@@ -653,6 +653,9 @@ if get(handles.globFitSelect,'Value')
         msgbox('No Unique Global Variables listed');
         return
     end
+%     if iscell(globalVar{1})
+        globalVar=globalVar{1};
+%     end
      if length(ub)<(numFitVar+(length(globalVar))*(numDataSet-1)) % duplicated the bounds if necessary for each data set 
         for i=1:length(globalVar)
         globVarPos=find(strcmp(userFitVar,globalVar{i})); 
@@ -666,7 +669,7 @@ if get(handles.globFitSelect,'Value')
          msgbox('Global Fit Variable not found in fitting variables');
      end
      %makes the PDF for the global case 
-     [ custpdf userFitVar] = strLinPDF( userPDF, userFitVar,userDataVar,globalVar{1},numDataSet );
+     [ custpdf userFitVar] = strLinPDF( userPDF, userFitVar,userDataVar,globalVar,numDataSet);
 else %non-global fit
   
 if length(userDataVar)==1 %if single dimensional data, only use the relavant column specified as Xcol
@@ -1781,6 +1784,35 @@ function popFigBtn_Callback(hObject, eventdata, handles)
 % hObject    handle to popFigBtn (see GCBO)
 % eventdata  reserved - to be defined in a future version of MATLAB
 % handles    structure with handles and user data (see GUIDATA)
+popAll=0;
+if get(handles.globFitSelect,'Value')
+     popAll = questdlg('Would you like to pop out each dataset with the current global fit?','Pop out all Datasets?','Yes','No','Yes');
+end
+
+if strcmp(popAll,'Yes')
+        globVars= textscan(get(handles.globalVarBox,'String'),'%s','delimiter',',');
+        globVars=globVars{1};
+        data=getappdata(handles.axes1,'data'); 
+        userDataVar= textscan(get(handles.userDataVar,'String'),'%s','delimiter',',');
+        numDataVar=length(userDataVar{1}); 
+        numDataSet=size(data,2)/numDataVar; 
+        curDataset=get(handles.xAxisCol,'Value');
+    for i=1:numDataSet
+        ClearPlotBtn_Callback(hObject, eventdata, handles)
+        set(handles.xAxisCol,'Value',i);
+        plotDataBtn_Callback(hObject, eventdata, handles)
+        plotFit(handles)
+        popCurFig(eventdata, handles)
+    end
+    set(handles.xAxisCol,'Value',curDataset);
+    ClearPlotBtn_Callback(hObject, eventdata, handles)   
+    plotDataBtn_Callback(hObject, eventdata, handles)
+    plotFit(handles)
+else
+    popCurFig(eventdata, handles)
+end
+
+function popCurFig(eventdata, handles)
 h1=handles.axes1; %handle to GUI plot
 %read the legend for old Version of Matlab 
  [dummy ,dummy,dummy,legStr]=legend;

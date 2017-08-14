@@ -19,7 +19,7 @@ if nargin==5 % if a global fit is neccessary, a combined PDF is generated
         %the cell array of fitting variables and add back in their
         %independent versions     
         for  i=1:length(globalVar) %replaces the global var with the modified one for this data set (adding _#) 
-        eval(sprintf('globalPDF=strrep(char(globalPDF),''%s'',''%s_%u'');',char(globalVar{i}),char(globalVar{i}),k))
+        eval(sprintf('globalPDF=strrep(char(globalPDF),'',%s,'','',%s_%u,'');',char(globalVar{i}),char(globalVar{i}),k))
         globVarPos=find(strcmp(userFitVar,globalVar{i})); 
         %updates the list of fittedVariables 
         userFitVar = [userFitVar(1:(globVarPos+(k-1))); sprintf('%s_%u',char(globalVar{i}),k); userFitVar((globVarPos+(k)):end)];

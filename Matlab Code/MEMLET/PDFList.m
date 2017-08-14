@@ -8,17 +8,23 @@ function [output varargout]=PDFList(PDFname,varargin)
 if nargin==1
     limtype=0;
     type='all';
-    switch 1
-        case strcmp(PDFname,'all')
+    switch PDFname
+        case 'all'
             search=[1];
-        case strcmp(PDFname,'Cam')
+            PDFname='all';
+        case 'Cam'
             search=[1 3];
-        case strcmp(PDFname,'Oth')
+            PDFname='all';
+        case 'Oth'
             search=[1 2];
-        case strcmp(PDFname,'CamOth')
-            search=[1 2 3];     
+            PDFname='all';
+        case 'OthCam'
+            search=[1 2 3];  
+             PDFname='all';
+        otherwise
+            search=[1 2 3];      
     end
-    PDFname='all';
+%     PDFname='all';
 elseif nargin==2;
     limtype=0;
     type=varargin{1};
@@ -28,7 +34,11 @@ else
     limtype=varargin{2};
     search=[1 2 3];  
 end
-searchDirs={'PDFs\','PDFs\Extra PDFs\','PDFs\Camera PDFs\'};
+if ispc;
+    searchDirs={'PDFs','PDFs\Extra PDFs\','PDFs\Camera PDFs\'};
+else 
+    searchDirs={'PDFs/','PDFs/Extra PDFs/','PDFs/Camera PDFs/'};
+end
 
 
 
@@ -124,6 +134,7 @@ if isdir(PDFDir)
     try
     listing =  dir(PDFDir);
     listing=listing(cellfun(@(x) x==0, {listing.isdir})); %skips . and ..
+
     k=1;
        for i=1:size(listing,1) 
          % add any new PDF's to the working root directory 
@@ -151,10 +162,12 @@ if isdir(PDFDir)
            else  %read other PDFs if they aren't more complicated 
                try %try to use .m file PDFS, but won't work with standalone if they haven't been compiled. 
                     if isempty(strfind(listing(i).name(1:end-2),'Template'))
+                        if ~strcmp(listing(i).name(1),'.') % ignore .DStore, etc files
                         filePDFs(k)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
                         fileNames{k}=filePDFs(k).name; 
                         filePDFs(k)=eval([listing(i).name(1:end-2) '(' num2str(limtype) ');']);
                         k=k+1;
+                        end 
                     else
                     end
                catch
@@ -187,8 +200,6 @@ else
        output=eval(sprintf('builtInPDF(%d).%s',Index,type));
    end
 end 
-% Please Ignore: hack to include Beta Functoin in Distribution 
-  if i==1e23 ;
-      x=beta(random('uniform',0,1,2));
-  end
-end
+% Please Ignore: hack to include Beta Function in Distribution 
+       x=beta(random('uniform',0,1,1,1),random('uniform',0,1,1,1));
+ end
