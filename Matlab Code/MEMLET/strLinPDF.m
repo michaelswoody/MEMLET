@@ -18,11 +18,11 @@ if nargin==5 % if a global fit is neccessary, a combined PDF is generated
         %need to select only the global variables, remove the original from
         %the cell array of fitting variables and add back in their
         %independent versions     
-        for  i=1:length(globalVar) %replaces the global var with the modified one for this data set (adding _#) 
-        eval(sprintf('globalPDF=strrep(char(globalPDF),'',%s,'','',%s_%u,'');',char(globalVar{i}),char(globalVar{i}),k))
-        globVarPos=find(strcmp(userFitVar,globalVar{i})); 
-        %updates the list of fittedVariables 
-        userFitVar = [userFitVar(1:(globVarPos+(k-1))); sprintf('%s_%u',char(globalVar{i}),k); userFitVar((globVarPos+(k)):end)];
+        for  i=1:length(globalVar) %replaces the global var with the modified one for this data set (adding _#)      
+            eval(sprintf('globalPDF=regexprep(char(globalPDF),''(?<![a-zA-Z_0-9])%s(?![a-zA-Z_0-9])'',''%s_%u'');',char(globalVar{i}),char(globalVar{i}),k))
+            globVarPos=find(strcmp(userFitVar,globalVar{i})); 
+            %updates the list of fittedVariables 
+            userFitVar = [userFitVar(1:(globVarPos+(k-1))); sprintf('%s_%u',char(globalVar{i}),k); userFitVar((globVarPos+(k)):end)];
         end 
         for i=1:length(userDataVar) %replaces the data var index with the right one for this dataset 
             newInd=(k-1)*length(userDataVar)+i; %takes into account multiple columns representing one dataset

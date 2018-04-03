@@ -1,6 +1,6 @@
 function [output varargout]=PDFList(PDFname,varargin)
-%(v1.0) return values for a given PDF, will scan the subfolder "PDFs" to
-%look for additional PDFS. See User's Guide for more details
+%(v1.3) return values for a given PDF, will scan the subfolder "PDFs" to
+%look for additional PDFS, included weighted. See User's Guide for more details
 %asking for 'all' gives the names only of every PDF in the database
 %varargin{1} is type of data requested
 %varagin{2} is the deadtime combination type (0-no limits, 1-tmin only, 2- tmax only, 3 tmin and tmax) 
@@ -8,36 +8,40 @@ function [output varargout]=PDFList(PDFname,varargin)
 if nargin==1
     limtype=0;
     type='all';
-    switch PDFname
-        case 'all'
-            search=[1];
-            PDFname='all';
-        case 'Cam'
-            search=[1 3];
-            PDFname='all';
-        case 'Oth'
-            search=[1 2];
-            PDFname='all';
-        case 'OthCam'
-            search=[1 2 3];  
-             PDFname='all';
-        otherwise
-            search=[1 2 3];      
+    origPDFname=PDFname;
+    search=[1];
+   
+    if ~isempty(strfind(origPDFname,'Oth'))
+        PDFname='all';
+        search=[search 2];
+    end 
+    if ~isempty(strfind(origPDFname,'Cam'))
+        PDFname='all';
+        search=[search 3];
+    end 
+    if ~isempty(strfind(origPDFname,'Wei'))
+        PDFname='all';
+        search=[search 4];
     end
-%     PDFname='all';
+    
+     if strcmp(PDFname,'all')
+     elseif strcmp(PDFname,origPDFname)
+        search=[1 2 3 4]; 
+     end
+
 elseif nargin==2;
     limtype=0;
     type=varargin{1};
-    search=[1 2 3];  
+    search=[1 2 3 4];  
 else
     type=varargin{1};
     limtype=varargin{2};
-    search=[1 2 3];  
+    search=[1 2 3 4];  
 end
 if ispc;
-    searchDirs={'PDFs','PDFs\Extra PDFs\','PDFs\Camera PDFs\'};
+    searchDirs={'PDFs','PDFs\Extra PDFs\','PDFs\Camera PDFs\','PDFs\Weighted PDFs\'};
 else 
-    searchDirs={'PDFs/','PDFs/Extra PDFs/','PDFs/Camera PDFs/'};
+    searchDirs={'PDFs/','PDFs/Extra PDFs/','PDFs/Camera PDFs/','PDFs/Weighted PDFs/'};
 end
 
 

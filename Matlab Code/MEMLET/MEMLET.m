@@ -1,14 +1,14 @@
 function varargout = MEMLET(varargin)
 % MEMLET MATLAB code for MEMLET.fig
 %   MLE Fitting Program with Graphic User Interface. 
-%   Current Version 1.1.2, released April 2017
+%   Current Version 1.3.0, released April 2018
 %   Written by Michael S Woody. memletinfo@gmail.com
 %   For more information, see the user's guide supplied at http://michaelswoody.github.io/MEMLET/
 %   To user the program with the command line, use the MEMELTCL.m file
 %      
 %
 
-% Last Modified by GUIDE v2.5 25-Apr-2017 10:06:37
+% Last Modified by GUIDE v2.5 02-Apr-2018 11:19:44
 
 % Begin initialization code - DO NOT EDIT
 gui_Singleton = 1;
@@ -63,6 +63,7 @@ set(handles.delTtext,'Visible','Off')
 
 handles.showCam.Checked='off';
 handles.ShowOther.Checked='off';
+handles.showWeight.Checked='off';
 axes(handles.axes1);
 % UIWAIT makes MEMLET wait for user response (see UIRESUME)
 % uiwait(handles.figure1);
@@ -372,7 +373,7 @@ end
 % generated the PDF to be plotted using strLinPDF with only two inputs
 % (dataVars and fitVars) 
 [ PDF userFitVar] = strLinPDF(fitPDF, userFitVar,userDataVar);
-
+ 
 deadtime=str2double(get(handles.deadTime,'String'));
 if isnan(deadtime) % if no deadtime, start plotting at minimum value 
     xCol=get(handles.xAxisCol,'Value');
@@ -383,6 +384,9 @@ if isnan(deadtime) % if no deadtime, start plotting at minimum value
     end
 end
 plotVarx=linspace(deadtime,xl(2),10000)'; %create variables for plotting along x
+if strfind(fitPDF,'Weight') & strcmp(userDataVar(end),'w') %if a weighted fit
+  plotVarx=[plotVarx ones(1,10000)'];
+end
 try
  if strcmp(plotType,'hist') 
      if nargin==3 %in case of bootstrapping need two plots
@@ -392,12 +396,12 @@ try
          %find the upper and lower values at each x position 
           uppers=prctile(allVals,(1-(1-confIt)/2)*confIt*100,1);
           lowers=prctile(allVals,100*(1-confIt)/2,1);
-        plot(plotVarx,uppers,'k--');
+        plot(plotVarx(:,1),uppers,'k--');
         hold on 
-        plot(plotVarx,lowers,'k--');
+        plot(plotVarx(:,1),lowers,'k--');
      else  
         fitted=PDF(plotVarx,fittedVals);  %evaluate PDF
-        plot(plotVarx,fitted,'LineWidth',1); %plot PDF 
+        plot(plotVarx(:,1),fitted,'LineWidth',1); %plot PDF 
      end 
  elseif strcmp(plotType,'cumu')
              if nargin==3 %in case of bootstrapping need two plots
@@ -408,16 +412,17 @@ try
                  end
               uppers=prctile(fittedCDF,(1-(1-confIt)/2)*100,1);
               lowers=prctile(fittedCDF,100*(1-confIt)/2,1);
-            plot(plotVarx,uppers,'k--');
+            plot(plotVarx(:,1),uppers,'k--');
             hold on 
-            plot(plotVarx,lowers,'k--');
+            plot(plotVarx(:,1),lowers,'k--');
                
              
              else 
                  fitted=PDF(plotVarx,fittedVals);  
                 fittedCDF=cumtrapz(fitted(~isnan(fitted))); %take out any NaNs when doing cumulative (maybe at x=0?) 
                 fittedCDF=fittedCDF/max(fittedCDF); %normalize CDF
-                plot(plotVarx(~isnan(fitted)),fittedCDF)
+                plotVarx2=plotVarx(:,1);
+                plot(plotVarx2(~isnan(fitted)),fittedCDF)
              end
  else %for x-y plot,
              yCol=get(handles.yAxisCol,'Value');
@@ -721,7 +726,7 @@ end
                             fitData=cell(1,length(data));
                             for j=1:length(data)
                                 tempData=cell2mat(data(j));
-                                if mod(j,numDataVar)==1 %only make new indexes for each set of data (
+                                if mod(j,numDataVar)==1|| numDataVar==1 %only make new indexes for each set of data (
                                 ind=ceil(length(tempData)*rand(1,length(tempData)));
                                 end
                                 fitData(j)={tempData(ind)};
@@ -754,7 +759,7 @@ end
                             fitData=cell(1,length(data));
                            for j=1:length(data)
                                 tempData=cell2mat(data(j));
-                                if mod(j,numDataVar)==1 %only make new indexes for each set of data
+                                if mod(j,numDataVar)==1 || numDataVar==1%only make new indexes for each set of data
                                 ind2=ceil(length(tempData)*rand(1,length(tempData)));
                                 end
                                 fitData(j)={tempData(ind2)};
@@ -2141,6 +2146,20 @@ else
 end
 
     RefreshPDFList(handles);
+    
+    
+% --------------------------------------------------------------------
+function showWeight_Callback(hObject, eventdata, handles)
+% hObject    handle to showWeight (see GCBO)
+% eventdata  reserved - to be defined in a future version of MATLAB
+% handles    structure with handles and user data (see GUIDATA)
+if strcmp(hObject.Checked,'off')
+    hObject.Checked='on';
+else
+    hObject.Checked ='off';
+end
+
+    RefreshPDFList(handles);
 
 function RefreshPDFList(handles) 
 search=[];
@@ -2150,13 +2169,16 @@ end
 if strcmp(handles.ShowOther.Checked,'on')
     search=[search 'Oth'];
 end
+if strcmp(handles.showWeight.Checked,'on')
+    search=[search 'Wei'];
+end
 if isempty(search)
     search='all';
 end
 OldValue=handles.PDFselect.String(handles.PDFselect.Value);
 PDFnames=PDFList(search);
 PDFnames={PDFnames{:} 'Other'};
-if ~strcmp(search,'CamOth')
+if ~strcmp(search,'CamOthWei')
    PDFnames={PDFnames{:} 'Use Show PDFs menu for more...'};
 end
 newInd=1; reset=1;
@@ -2176,3 +2198,7 @@ end
 
 
 function constIn_Callback(hObject, eventdata, handles)
+
+function annealTempInput_Callback(hObject, eventdata, handles)
+
+
